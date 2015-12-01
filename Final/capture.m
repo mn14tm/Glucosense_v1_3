@@ -1,5 +1,4 @@
 function [decay_ms, standd] = capture()
-%function [decay_ms, standd] = capture()
 
 % Taken from:
 % Filename:    PS3000A_IC_Generic_Driver_1buffer_RapidBlock
@@ -29,22 +28,25 @@ clear;
 %info.sample = input('Enter sample number: ', 's');
 %info.laserPulseWidth = input('Enter laser pulse width (ms): ', 's');
 %info.laserCurrent = input('Enter laser current (mA): ', 's');
-info.sample = 'K3';
+info.sample = 'T18';
 info.laserPulseWidth = '500us';
 info.laserCurrent = '300mA';
-
+info.user = 'Thomas';
 %number of captures to average over
-nCaptures = 100;
+nCaptures = 10;
 info.nCaptures = int2str(nCaptures);
 
 %data truncation values before curve fitting
 t_curvefit_start = 1e-3;
-t_curvefit_stop = 50e-3;
+t_curvefit_stop = 98e-3;
 
 %% Set path to dlls and functions
-addpath('..\');
-addpath('..\Functions');
-addpath('win64')
+% addpath('..\');
+% addpath('..\Functions');
+% addpath('win64')                % Drivers ETC
+
+% Add all files in folder
+addpath(genpath(pwd)); 
 
 %% Load in enumerations and structures
 [methodinfo, structs, enuminfo, ThunkLibName] = PS3000aMFile;
@@ -64,7 +66,7 @@ data.oversample = 1;
 data.scaleVoltages = data.TRUE;
 data.inputRangesmV = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
-plotData = data.FALSE;
+plotData = data.FALSE;    % Set to true to plot data
 
 %% Device Connection
 
@@ -94,8 +96,8 @@ channelSettings(1).DCCoupled = data.TRUE;
 %channelSettings(1).analogueOffset = -0.25;
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
 %channelSettings(1).analogueOffset = -0.24;
-channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_20MV;
-channelSettings(1).analogueOffset = -0.215;
+channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
+channelSettings(1).analogueOffset = -0.220;
 
 
 % Channel B (trigger)
@@ -273,7 +275,7 @@ end
 
 disconnect(ps3000a_obj);
 
-%% Calculate mean values (along 2nd array dimension)
+%% Calculate mean values (along 2nd array dimension - columns)
 
 buffer_a_mean = mean(buffer_a,2);
 buffer_a_mv_mean = mean(buffer_a_mv,2);
@@ -304,7 +306,7 @@ t_trun_stop = floor(t_curvefit_stop/t_samp);
 ydata = buffer_a_mv_mean(t_trun_start:t_trun_stop);
 xdata = 0:t_samp:((length(ydata)-1)*t_samp);
 xdata = xdata';
-timedata = xdata;
+timedata = (0:t_samp:((length(buffer_a_mv_mean)-1)*t_samp))';
 
 [decay_ms, standd] = curve_fit2(xdata,ydata);
 
@@ -313,9 +315,11 @@ result.standd = standd;
 
 %% Save data in .MAT file
 
-timestamp = datestr(datetime('now'),'yyyymmddHHMMSS');
-savefile = [timestamp '.MAT'];
-save(savefile, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
+timestamp = datestr(now(),'yyyymmddHHMMSS');
+filename = [timestamp '.MAT'];
+f = fullfile('Data',filename);
+save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 'timedata');
+csvwrite(['Data\CSV\',timestamp,'.csv'],[timedata, buffer_a_mv_mean])
 
 end

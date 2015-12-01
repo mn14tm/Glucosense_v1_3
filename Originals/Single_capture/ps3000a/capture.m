@@ -1,4 +1,5 @@
 function [decay_ms, standd] = capture()
+%function [decay_ms, standd] = capture()
 
 % Taken from:
 % Filename:    PS3000A_IC_Generic_Driver_1buffer_RapidBlock
@@ -33,20 +34,17 @@ info.laserPulseWidth = '500us';
 info.laserCurrent = '300mA';
 
 %number of captures to average over
-nCaptures = 100;
+nCaptures = 10;
 info.nCaptures = int2str(nCaptures);
 
 %data truncation values before curve fitting
 t_curvefit_start = 1e-3;
-t_curvefit_stop = 50e-3;
+t_curvefit_stop = 98e-3;
 
 %% Set path to dlls and functions
-% addpath('..\');
-% addpath('..\Functions');
-% addpath('win64')                % Drivers ETC
-
-% Add all files in folder
-addpath(genpath('MATLAB\Glucosense_v1_3\development')); 
+addpath('..\');
+addpath('..\Functions');
+addpath('win64')
 
 %% Load in enumerations and structures
 [methodinfo, structs, enuminfo, ThunkLibName] = PS3000aMFile;
@@ -66,7 +64,7 @@ data.oversample = 1;
 data.scaleVoltages = data.TRUE;
 data.inputRangesmV = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
-plotData = data.FALSE;    % Set to true to plot data
+plotData = data.FALSE;
 
 %% Device Connection
 
@@ -96,8 +94,8 @@ channelSettings(1).DCCoupled = data.TRUE;
 %channelSettings(1).analogueOffset = -0.25;
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
 %channelSettings(1).analogueOffset = -0.24;
-channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_20MV;
-channelSettings(1).analogueOffset = -0.215;
+channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
+channelSettings(1).analogueOffset = -0.220;
 
 
 % Channel B (trigger)
@@ -275,7 +273,7 @@ end
 
 disconnect(ps3000a_obj);
 
-%% Calculate mean values (along 2nd array dimension - columns)
+%% Calculate mean values (along 2nd array dimension)
 
 buffer_a_mean = mean(buffer_a,2);
 buffer_a_mv_mean = mean(buffer_a_mv,2);
@@ -316,9 +314,8 @@ result.standd = standd;
 %% Save data in .MAT file
 
 timestamp = datestr(now(),'yyyymmddHHMMSS');
-filename = [timestamp '.MAT'];
-f = fullfile('Data',filename);
-save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
+savefile = [timestamp '.MAT'];
+save(savefile, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 'timedata');
 
 end

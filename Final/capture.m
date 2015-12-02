@@ -30,8 +30,8 @@ clear;
 %info.laserCurrent = input('Enter laser current (mA): ', 's');
 info.sample = 'T18';
 info.laserPulseWidth = '500us';
-info.laserCurrent = '300mA';
-info.user = 'Thomas';
+info.laserCurrent = '500mA';
+info.user = 'Billy';
 %number of captures to average over
 nCaptures = 10;
 info.nCaptures = int2str(nCaptures);
@@ -97,7 +97,7 @@ channelSettings(1).DCCoupled = data.TRUE;
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
 %channelSettings(1).analogueOffset = -0.24;
 channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-channelSettings(1).analogueOffset = -0.220;
+channelSettings(1).analogueOffset = -0.230;
 
 
 % Channel B (trigger)
@@ -320,6 +320,6 @@ filename = [timestamp '.MAT'];
 f = fullfile('Data',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 'timedata');
-csvwrite(['Data\CSV\',timestamp,'.csv'],[timedata, buffer_a_mv_mean])
+% csvwrite(['Data\CSV\',timestamp,'.csv'],[timedata, buffer_a_mv_mean])
 
 end

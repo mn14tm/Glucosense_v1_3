@@ -10,6 +10,7 @@ end
 clf;
 subplot(2,1,1); plot(xdata,ydata,'b')
 
+% Define anonymous function f(p)
 f = @(p) sum((ydata - (p(1) + (p(2)*exp(-xdata/p(3))))).^2);
 
 %initial guess for parameters
@@ -35,7 +36,7 @@ yfitted = p(1) + (p(2)*exp(-xdata/p(3)));
 hold on
 plot(xdata,yfitted,'r')
 
-fminres2=sum((ydata-yfitted).^2);
+fminres2 = sum((ydata-yfitted).^2);
 
 res = ydata-yfitted;
 
@@ -43,7 +44,9 @@ standd = std(res);
 
 fprintf('Std = %.3f\n',standd);
 
-subplot(2,1,2); plot(xdata,res); %axis([0 0.05 -0.2 0.2]);
+subplot(2,1,2); 
+plot(xdata,res); 
+%axis([0 0.05 -0.2 0.2]);
 
 %chi-squared value - Todo: need to finish
 %sum(((abs(ydata-yfitted)).^2)./yfitted)/(length(xdata)-3)

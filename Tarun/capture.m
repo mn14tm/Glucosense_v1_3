@@ -6,31 +6,40 @@ clear;
 
 %% ********** Parameters to change **********
 
-info.sample = 'T18';
-info.concentration = '12';  % Glucose concentration in mg/dl
-info.runNumber = '1';       % Run number for chip and concentration
-info.sample = 'Blood';      % Blood/Intralipid/Finger
-
-info.laserPulseWidth = '500us';
-info.laserCurrent = '500mA';
+info.sample = 'T18';          % Photonic Chip 
+info.laserPulseWidth = '0.5ms'; % Laser pulse width
+info.laserCurrent = '300mA';  % Laser driver current
 info.user = 'Tarun';
-info.nCaptures = 100; %number of captures to average over
+info.nCaptures = 10;          % Number of captures to average over
+info.glucosenseDevice = 2;    % Glucosense device used (1, 2, 3)
 
-%% End of user parameters
+% -- Picoscope Settings -- %
+%channel A range and offset - may need to change depending on signal level
+range = 50;                   % Range in mV (50 or 100)
+analogueOffset = -0.230;      % Analogue offset in mV
 
-nCaptures = info.nCaptures; 
+% -- Working with glucose parameters -- %
+info.concentration = '12';    % Glucose concentration in mg/dl
+info.medium = 'Air';        % Blood/Intralipid/Finger
+info.runNumber = '3';         % Run number for chip and concentration
 
+% -- Saving CSV -- %
+storeCSV = true;             % Store data as a CSV (true / false)
+headerCSV = true;            % Include header info to CSV (true / false)
+
+%% End of user parameters 
+
+% Use if serial device is not properly closed
+% delete(instrfindall)
+
+% TODO: why is it limited to <100ms?
 %data truncation values before curve fitting
 t_curvefit_start = 1e-3;
 t_curvefit_stop = 98e-3;
 
 %% Set path to dlls and functions
-% addpath('..\');
-% addpath('..\Functions');
-% addpath('win64')                % Drivers ETC
-
-% Add all files in folder
-addpath(genpath(pwd)); 
+addpath(genpath(fileparts(mfilename('fullpath'))));
+cd(fileparts(mfilename('fullpath')));
 
 %% Load in enumerations and structures
 [methodinfo, structs, enuminfo, ThunkLibName] = PS3000aMFile;
@@ -77,11 +86,16 @@ channelSettings(1).DCCoupled = data.TRUE;
 
 %channel A range and offset - may need to change depending on signal level
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
-%channelSettings(1).analogueOffset = -0.25;
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-%channelSettings(1).analogueOffset = -0.24;
-channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-channelSettings(1).analogueOffset = -0.230;
+
+switch range
+    case 50
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
+    case 100
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
+end
+
+channelSettings(1).analogueOffset = analogueOffset;
 
 
 % Channel B (trigger)
@@ -123,6 +137,7 @@ segmentIndex = 0;
         timeIntNs, data.oversample, maxSamples, segmentIndex);
 
 %% Setup Number of Captures and Memory Segments
+nCaptures = info.nCaptures;
 
 % Segment the memory
 [mem_segments_status, maxSamples] = invoke(ps3000a_obj, 'ps3000aMemorySegments', ...
@@ -275,7 +290,7 @@ if (plotData == data.TRUE)
     t = t_ns / 1000000;
 
     plot(t, buffer_a_mv_mean);
-    %plot(t,buffer_a_mv(:,1))
+    %plot(t,buffer_a_mv(:,1))  % Plot a single decay
     xlabel('Time (ms)');
     ylabel('Voltage (mV)');
 
@@ -290,6 +305,8 @@ t_trun_stop = floor(t_curvefit_stop/t_samp);
 ydata = buffer_a_mv_mean(t_trun_start:t_trun_stop);
 xdata = 0:t_samp:((length(ydata)-1)*t_samp);
 xdata = xdata';
+
+%TODO: use t instead of timedata?
 timedata = (0:t_samp:((length(buffer_a_mv_mean)-1)*t_samp))';
 
 [decay_ms, standd] = curve_fit2(xdata,ydata);
@@ -300,10 +317,26 @@ result.standd = standd;
 %% Save data in .MAT file
 
 timestamp = datestr(now(),'yyyymmddHHMMSS');
+info.timestamp = timestamp;
+
 filename = [timestamp '.MAT'];
-f = fullfile('Data',filename);
+f = fullfile('Data\mat\',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 'timedata');
-% csvwrite(['Data\CSV\',timestamp,'.csv'],[timedata, buffer_a_mv_mean])
+
+
+if storeCSV == true
+    fname = {info.sample, [info.concentration, 'mgdl'], ['r', info.runNumber]};
+    fname = strjoin(fname, '_');
+    fname =  ['Data\CSV\',fname,'.csv'];
+    % csvwrite(fname ,[timedata, buffer_a_mv_mean])
+    
+    if headerCSV == true
+        struct2csv(info,fname); % Save Info
+    end
+    
+    CSVdata = [timedata, buffer_a_mv_mean];
+    dlmwrite(fname, CSVdata, '-append'); % Append data
+end
 
 end

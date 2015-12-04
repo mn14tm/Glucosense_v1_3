@@ -30,7 +30,7 @@ clear;
 %info.laserCurrent = input('Enter laser current (mA): ', 's');
 info.sample = 'T18';
 info.laserPulseWidth = '500us';
-info.laserCurrent = '500mA';
+info.laserCurrent = '300mA';
 info.user = 'Billy';
 %number of captures to average over
 nCaptures = 10;
@@ -97,7 +97,7 @@ channelSettings(1).DCCoupled = data.TRUE;
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
 %channelSettings(1).analogueOffset = -0.24;
 channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-channelSettings(1).analogueOffset = -0.230;
+channelSettings(1).analogueOffset = -0.210;
 
 
 % Channel B (trigger)

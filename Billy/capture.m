@@ -282,6 +282,7 @@ if (plotData == data.TRUE)
     % Time axis
     t_ns = double(timeIntNs1) * double([0:numSamples - 1]);
     t = t_ns / 1000000;
+    t = t';
 
     plot(t, buffer_a_mv_mean);
     %plot(t,buffer_a_mv(:,1))  % Plot a single decay
@@ -300,9 +301,6 @@ ydata = buffer_a_mv_mean(t_trun_start:t_trun_stop);
 xdata = 0:t_samp:((length(ydata)-1)*t_samp);
 xdata = xdata';
 
-%TODO: use t instead of timedata?
-timedata = (0:t_samp:((length(buffer_a_mv_mean)-1)*t_samp))';
-
 [decay_ms, standd] = curve_fit2(xdata,ydata);
 
 result.decay_ms = decay_ms;
@@ -316,7 +314,7 @@ info.timestamp = timestamp;
 filename = [timestamp '.MAT'];
 f = fullfile('Data\mat\',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
-    'result', 'timestamp', 'timedata');
+    'result', 'timestamp', 't');
 
 
 if storeCSV == true

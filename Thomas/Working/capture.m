@@ -1,52 +1,37 @@
 function [decay_ms, standd] = capture()
 
-% Taken from:
-% Filename:    PS3000A_IC_Generic_Driver_1buffer_RapidBlock
-% Copyright:   Pico Technology Limited 2012
-% Author:      HSM
-% Description:
-%   This is a MATLAB script that demonstrates how to use the
-%   PicoScope 3000a series Instrument Control Toobox driver to collect a 
-%   rapid block of samples immediately with 1 data buffer on 1 channel.
-%	To run this application:
-%		Ensure that the following files are located either in the same 
-%       directory or define the path:
-%       
-%       - ps3000a.mdd
-%       - PS3000a.dll & ps3000aWrap.dll (Windows version of MATLAB only)
-%       - PS3000aMFile & ps3000aWrapMFile
-%       - PicoStatus.m
-%       - ps3000aChangePowerSource.m  
-%       - adc2mv.m & mv2adc.m (located in the Functions directory)
-
 %% Clear MATLAB environment
-clc;
-clear;
+clc; clear;
 
 %% ********** Parameters to change **********
+info.user = 'Thomas';
+info.sample = 'T13';             % Photonic Chip 
+info.nCaptures = 100;           % Number of captures to average over
+info.glucosenseDevice = 1;      % Glucosense device used (1, 2, 3)
+info.temp = 23;                 % Room Temp (degC)
 
-%info.sample = input('Enter sample number: ', 's');
-%info.laserPulseWidth = input('Enter laser pulse width (ms): ', 's');
-%info.laserCurrent = input('Enter laser current (mA): ', 's');
-info.sample = 'T18';
-info.laserPulseWidth = '500us';
-info.laserCurrent = '300mA';
-info.user = 'Billy';
-%number of captures to average over
-nCaptures = 10;
-info.nCaptures = int2str(nCaptures);
+% -- Picoscope Settings -- %
+%channel A range and offset - change depending on signal level
+info.range = 20;               % Range in mV
+info.analogueOffset = -0.215;      % DC Analogue offset in V
 
-%data truncation values before curve fitting
-t_curvefit_start = 1e-3;
-t_curvefit_stop = 98e-3;
+% -- Laser Driver Params -- %
+info.laserCurrent = 60;        % Laser driver current (mA)
+info.laserPulsePeriod = 250;    % Laser pulse period (ms)
+info.laserPulseWidth = 100;     % Laser pulse width (ms)
+
+% Curve Fitting Details
+t_curvefit_start = 1;           % Start reject time (ms)
+t_curvefit_stop = 1;            % End reject time (ms)
+
+% ---- End of user parameters ---- % 
+
+% Use if serial device is not properly closed
+% delete(instrfindall)
 
 %% Set path to dlls and functions
-% addpath('..\');
-% addpath('..\Functions');
-% addpath('win64')                % Drivers ETC
-
-% Add all files in folder
-addpath(genpath(pwd)); 
+addpath(genpath(fileparts(mfilename('fullpath'))));
+cd(fileparts(mfilename('fullpath')));
 
 %% Load in enumerations and structures
 [methodinfo, structs, enuminfo, ThunkLibName] = PS3000aMFile;
@@ -57,7 +42,8 @@ global data;
 data.TRUE = 1;
 data.FALSE = 0;
 
-data.BUFFER_SIZE = 12000;   %12219;
+% data.BUFFER_SIZE = 12000;   %12219; (100ms default)
+data.BUFFER_SIZE = 120 * info.laserPulsePeriod;
 
 data.timebase = 1024;     % ~1 MS/s (320XA/B)
 %data.timebase = 127       % 1 MS/s (340XA/B)
@@ -66,7 +52,7 @@ data.oversample = 1;
 data.scaleVoltages = data.TRUE;
 data.inputRangesmV = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
-plotData = data.FALSE;    % Set to true to plot data
+plotData = data.FALSE;
 
 %% Device Connection
 
@@ -92,13 +78,29 @@ channelSettings(1).enabled = data.TRUE;
 channelSettings(1).DCCoupled = data.TRUE;
 
 %channel A range and offset - may need to change depending on signal level
-%channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
-%channelSettings(1).analogueOffset = -0.25;
-%channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-%channelSettings(1).analogueOffset = -0.24;
-channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-channelSettings(1).analogueOffset = -0.210;
+switch info.range
+    case 20
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_20MV;
+    case 50
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
+    case 100
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
+    case 200
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_200MV;
+    case 500
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_500MV;
+    case 1000
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_1V;
+    case 2000
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_2V;
+    case 5000
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_5V;
+    case 0
+        % Manually input here
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_5V;
+end
 
+channelSettings(1).analogueOffset = info.analogueOffset;
 
 % Channel B (trigger)
 channelB = enuminfo.enPS3000AChannel.PS3000A_CHANNEL_B;
@@ -139,6 +141,7 @@ segmentIndex = 0;
         timeIntNs, data.oversample, maxSamples, segmentIndex);
 
 %% Setup Number of Captures and Memory Segments
+nCaptures = info.nCaptures;
 
 % Segment the memory
 [mem_segments_status, maxSamples] = invoke(ps3000a_obj, 'ps3000aMemorySegments', ...
@@ -148,7 +151,6 @@ segmentIndex = 0;
 num_captures_status = invoke(ps3000a_obj, 'ps3000aSetNoOfCaptures', nCaptures);
 
 %% Run Block
-
 preTriggerSamples = 0;
 postTriggerSamples = data.BUFFER_SIZE - preTriggerSamples;
 segmentIndex = 0;
@@ -282,22 +284,29 @@ buffer_a_mv_mean = mean(buffer_a_mv,2);
 
 %% Plot data
 
+% Time axis
+t_ns = double(timeIntNs1) * double([0:numSamples - 1]); % Time in ns
+t = t_ns / 1000000;  % convert to ms from ns
+t = t';
+
 if (plotData == data.TRUE)
 
     figure;
-
-    % Time axis
-    t_ns = double(timeIntNs1) * double([0:numSamples - 1]);
-    t = t_ns / 1000000;
-
+    
     plot(t, buffer_a_mv_mean);
-    %plot(t,buffer_a_mv(:,1))
+    %plot(t,buffer_a_mv(:,1))  % Plot a single decay
     xlabel('Time (ms)');
     ylabel('Voltage (mV)');
 
 end
 
 %% Fit curve
+
+%convert to ms
+t_curvefit_start = t_curvefit_start * 1e-3;
+
+t_curvefit_stop = info.laserPulsePeriod - info.laserPulseWidth - t_curvefit_stop;
+t_curvefit_stop = (t_curvefit_stop) * 1e-3;
 
 %truncate data
 t_samp = (double(timeIntNs1))*1e-9;
@@ -306,7 +315,6 @@ t_trun_stop = floor(t_curvefit_stop/t_samp);
 ydata = buffer_a_mv_mean(t_trun_start:t_trun_stop);
 xdata = 0:t_samp:((length(ydata)-1)*t_samp);
 xdata = xdata';
-timedata = (0:t_samp:((length(buffer_a_mv_mean)-1)*t_samp))';
 
 [decay_ms, standd] = curve_fit2(xdata,ydata);
 
@@ -316,10 +324,11 @@ result.standd = standd;
 %% Save data in .MAT file
 
 timestamp = datestr(now(),'yyyymmddHHMMSS');
+info.timestamp = timestamp;
+
 filename = [timestamp '.MAT'];
-f = fullfile('Data',filename);
+f = fullfile('Data\',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
-    'result', 'timestamp', 'timedata');
-% csvwrite(['Data\CSV\',timestamp,'.csv'],[timedata, buffer_a_mv_mean])
+    'result', 'timestamp', 't');
 
 end

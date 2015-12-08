@@ -273,14 +273,14 @@ buffer_a_mv_mean = mean(buffer_a_mv,2);
 
 %% Plot data
 
-if (plotData == data.TRUE)
-
-    figure;
-
-    % Time axis
+% Time axis
     t_ns = double(timeIntNs1) * double([0:numSamples - 1]); % Time in ns
     t = t_ns / 1000000;  % convert to ms from ns
     t = t';
+
+if (plotData == data.TRUE)
+
+    figure;
     
     plot(t, buffer_a_mv_mean);
     %plot(t,buffer_a_mv(:,1))  % Plot a single decay
@@ -322,13 +322,13 @@ if storeCSV == true
     fprintf(fid, 'Time, Mean, ');
     
     if storeIndividual == false
-        CSVdata = [timedata, buffer_a_mv_mean, buffer_a_mv];
+        CSVdata = [t, buffer_a_mv_mean, buffer_a_mv];
     
     else
         for i = 1:nCaptures
             fprintf(fid, ' Run %d,', i);
         end
-        CSVdata = [timedata, buffer_a_mv_mean];
+        CSVdata = [t, buffer_a_mv_mean];
     end
         
     fprintf(fid, '\n');

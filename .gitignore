@@ -1,6 +1,7 @@
 *.csv
 *.xlsx
 *.MAT
+*.png
 
 # Windows image file caches
 Thumbs.db

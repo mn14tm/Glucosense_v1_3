@@ -4,34 +4,34 @@ function [decay_ms, standd] = capture()
 clc; clear;
 
 %% ********** Parameters to change **********
-info.user = 'Tarun';
-info.sample = 'T13';             % Photonic Chip 
+info.user = 'Edu';
+info.sample = 'T10';             % Photonic Chip 
 info.nCaptures = 100;           % Number of captures to average over
-info.glucosenseDevice = 1;      % Glucosense device used (1, 2, 3)
-info.temp = 23;                 % Room Temp (degC).
+info.glucosenseDevice = 3;      % Glucosense device used (1, 2, 3)
+info.temp = 'RT';                 % Room Temp (degC).
 
 % -- Picoscope Settings -- %
 %channel A range and offset - change depending on signal level
 info.range = 20;               % Range in mV
-info.analogueOffset = -0.215;      % DC Analogue offset in V
-
-% -- Laser Driver Params -- %
-info.laserCurrent = 60;        % Laser driver current (mA)
-info.laserPulsePeriod = 250;    % Laser pulse period (ms)
-info.laserPulseWidth = 100;     % Laser pulse width (ms)
-
-% Curve Fitting Details
-t_curvefit_start = 1;           % Start reject time (ms)
-t_curvefit_stop = 1;            % End reject time (ms)
+info.analogueOffset = -0.21;      % DC Analogue offset in V
 
 % -- Working with glucose parameters -- %
-info.concentration = '12';    % Glucose concentration in mg/dl
+info.concentration = '50.5';    % Glucose concentration in mg/dl
 info.medium = 'Blood';        % Blood/Intralipid/Finger etc.
-info.runNumber = '3';         % Run number for chip and concentration
+info.runNumber = '1';         % Run number for chip and concentration
 
 % -- Saving CSV -- %
 storeCSV = true;             % Store data as a CSV (true / false)
 headerCSV = true;            % Include header info to CSV (true / false)
+
+% -- Laser Driver Params -- %
+info.laserCurrent = 300;        % Laser driver current (mA)
+info.laserPulsePeriod = 100;    % Laser pulse period (ms)
+info.laserPulseWidth = 0.5;     % Laser pulse width (ms)
+
+% Curve Fitting Details
+t_curvefit_start = 1;           % Start reject time (ms)
+t_curvefit_stop = 2;            % End reject time (ms)
 
 % ---- End of user parameters ---- % 
 
@@ -335,15 +335,16 @@ result.standd = standd;
 timestamp = datestr(now(),'yyyymmddHHMMSS');
 info.timestamp = timestamp;
 
-filename = [timestamp '.MAT'];
+fname = {info.sample, [info.concentration, 'mgdl'], ['r', info.runNumber]};
+fname = strjoin(fname, '_');
+
+filename = [fname '.MAT'];
 f = fullfile('Data\',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 't');
 
 
 if storeCSV == true
-    fname = {info.sample, [info.concentration, 'mgdl'], ['r', info.runNumber]};
-    fname = strjoin(fname, '_');
     fname =  ['Data\CSV\',fname,'.csv'];
     % csvwrite(fname ,[timedata, buffer_a_mv_mean])
     

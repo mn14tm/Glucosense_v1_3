@@ -1,41 +1,42 @@
 function [decay_ms, standd] = capture()
 
 %% Clear MATLAB environment
-clc;
-clear;
+clc; clear;
 
 %% ********** Parameters to change **********
-
-info.sample = 'T18';          % Photonic Chip 
-info.laserPulseWidth = '0.5ms'; % Laser pulse width
-info.laserCurrent = '300mA';  % Laser driver current
 info.user = 'Tarun';
-info.nCaptures = 10;          % Number of captures to average over
-info.glucosenseDevice = 2;    % Glucosense device used (1, 2, 3)
+info.sample = 'T13';             % Photonic Chip 
+info.nCaptures = 100;           % Number of captures to average over
+info.glucosenseDevice = 1;      % Glucosense device used (1, 2, 3)
+info.temp = 23;                 % Room Temp (degC).
 
 % -- Picoscope Settings -- %
-%channel A range and offset - may need to change depending on signal level
-range = 50;                   % Range in mV (50 or 100)
-analogueOffset = -0.230;      % Analogue offset in mV
+%channel A range and offset - change depending on signal level
+info.range = 20;               % Range in mV
+info.analogueOffset = -0.215;      % DC Analogue offset in V
+
+% -- Laser Driver Params -- %
+info.laserCurrent = 60;        % Laser driver current (mA)
+info.laserPulsePeriod = 250;    % Laser pulse period (ms)
+info.laserPulseWidth = 100;     % Laser pulse width (ms)
+
+% Curve Fitting Details
+t_curvefit_start = 1;           % Start reject time (ms)
+t_curvefit_stop = 1;            % End reject time (ms)
 
 % -- Working with glucose parameters -- %
 info.concentration = '12';    % Glucose concentration in mg/dl
-info.medium = 'Air';        % Blood/Intralipid/Finger
+info.medium = 'Blood';        % Blood/Intralipid/Finger etc.
 info.runNumber = '3';         % Run number for chip and concentration
 
 % -- Saving CSV -- %
 storeCSV = true;             % Store data as a CSV (true / false)
 headerCSV = true;            % Include header info to CSV (true / false)
 
-%% End of user parameters 
+% ---- End of user parameters ---- % 
 
 % Use if serial device is not properly closed
 % delete(instrfindall)
-
-% TODO: why is it limited to <100ms?
-%data truncation values before curve fitting
-t_curvefit_start = 1e-3;
-t_curvefit_stop = 98e-3;
 
 %% Set path to dlls and functions
 addpath(genpath(fileparts(mfilename('fullpath'))));
@@ -50,7 +51,8 @@ global data;
 data.TRUE = 1;
 data.FALSE = 0;
 
-data.BUFFER_SIZE = 12000;   %12219;
+% data.BUFFER_SIZE = 12000;   %12219; (100ms default)
+data.BUFFER_SIZE = 120 * info.laserPulsePeriod;
 
 data.timebase = 1024;     % ~1 MS/s (320XA/B)
 %data.timebase = 127       % 1 MS/s (340XA/B)
@@ -59,7 +61,7 @@ data.oversample = 1;
 data.scaleVoltages = data.TRUE;
 data.inputRangesmV = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
-plotData = data.FALSE;    % Set to true to plot data
+plotData = data.FALSE;
 
 %% Device Connection
 
@@ -85,18 +87,29 @@ channelSettings(1).enabled = data.TRUE;
 channelSettings(1).DCCoupled = data.TRUE;
 
 %channel A range and offset - may need to change depending on signal level
-%channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
-%channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-
-switch range
+switch info.range
+    case 20
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_20MV;
     case 50
         channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
     case 100
         channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
+    case 200
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_200MV;
+    case 500
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_500MV;
+    case 1000
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_1V;
+    case 2000
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_2V;
+    case 5000
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_5V;
+    case 0
+        % Manually input here
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_5V;
 end
 
-channelSettings(1).analogueOffset = analogueOffset;
-
+channelSettings(1).analogueOffset = info.analogueOffset;
 
 % Channel B (trigger)
 channelB = enuminfo.enPS3000AChannel.PS3000A_CHANNEL_B;
@@ -147,7 +160,6 @@ nCaptures = info.nCaptures;
 num_captures_status = invoke(ps3000a_obj, 'ps3000aSetNoOfCaptures', nCaptures);
 
 %% Run Block
-
 preTriggerSamples = 0;
 postTriggerSamples = data.BUFFER_SIZE - preTriggerSamples;
 segmentIndex = 0;
@@ -281,15 +293,15 @@ buffer_a_mv_mean = mean(buffer_a_mv,2);
 
 %% Plot data
 
+% Time axis
+t_ns = double(timeIntNs1) * double([0:numSamples - 1]); % Time in ns
+t = t_ns / 1000000;  % convert to ms from ns
+t = t';
+
 if (plotData == data.TRUE)
 
     figure;
-
-    % Time axis
-    t_ns = double(timeIntNs1) * double([0:numSamples - 1]);
-    t = t_ns / 1000000;
-    t = t';
-
+    
     plot(t, buffer_a_mv_mean);
     %plot(t,buffer_a_mv(:,1))  % Plot a single decay
     xlabel('Time (ms)');
@@ -299,6 +311,12 @@ end
 
 %% Fit curve
 
+%convert to ms
+t_curvefit_start = t_curvefit_start * 1e-3;
+
+t_curvefit_stop = info.laserPulsePeriod - info.laserPulseWidth - t_curvefit_stop;
+t_curvefit_stop = (t_curvefit_stop) * 1e-3;
+
 %truncate data
 t_samp = (double(timeIntNs1))*1e-9;
 t_trun_start = ceil(t_curvefit_start/t_samp) + 1;
@@ -306,9 +324,6 @@ t_trun_stop = floor(t_curvefit_stop/t_samp);
 ydata = buffer_a_mv_mean(t_trun_start:t_trun_stop);
 xdata = 0:t_samp:((length(ydata)-1)*t_samp);
 xdata = xdata';
-
-%TODO: use t instead of timedata?
-timedata = (0:t_samp:((length(buffer_a_mv_mean)-1)*t_samp))';
 
 [decay_ms, standd] = curve_fit2(xdata,ydata);
 
@@ -321,7 +336,7 @@ timestamp = datestr(now(),'yyyymmddHHMMSS');
 info.timestamp = timestamp;
 
 filename = [timestamp '.MAT'];
-f = fullfile('Data\mat\',filename);
+f = fullfile('Data\',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 't');
 
@@ -336,8 +351,9 @@ if storeCSV == true
         struct2csv(info,fname); % Save Info
     end
     
-    CSVdata = [timedata, buffer_a_mv_mean];
+    CSVdata = [t, buffer_a_mv_mean];
     dlmwrite(fname, CSVdata, '-append'); % Append data
 end
+
 
 end

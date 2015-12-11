@@ -13,12 +13,12 @@ info.temp = 'RT';                 % Room Temp (degC).
 % -- Picoscope Settings -- %
 %channel A range and offset - change depending on signal level
 info.range = 20;               % Range in mV
-info.analogueOffset = -0.21;      % DC Analogue offset in V
+info.analogueOffset = -0.21;      % DC Analogu
+% -- Working with glucose parameters -- %e offset in V
 
-% -- Working with glucose parameters -- %
-info.concentration = '50.5';    % Glucose concentration in mg/dl
-info.medium = 'Blood';        % Blood/Intralipid/Finger etc.
-info.runNumber = '1';         % Run number for chip and concentration
+info.concentration = '341.5';    % Glucose concentration in mg/dl
+info.medium = 'BloodNoSlip33'; % Blood/Intralipid/Finger/BloodNoSlip etc.
+info.runNumber = '3';         % Run number for chip and concentration
 
 % -- Saving CSV -- %
 storeCSV = true;             % Store data as a CSV (true / false)

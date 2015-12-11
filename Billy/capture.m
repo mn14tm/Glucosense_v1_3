@@ -7,28 +7,28 @@ clear;
 %% ********** Parameters to change **********
 
 info.sample = 'T18';          % Photonic Chip 
-info.laserPulseWidth = '0.5ms'; % Laser pulse width
-info.laserCurrent = '300mA';  % Laser driver current
-info.user = 'Tarun';
-info.nCaptures = 10;          % Number of captures to average over
+info.laserPulseWidth = '100ms'; % Laser pulse width
+info.laserCurrent = '40mA';  % Laser driver current
+info.user = 'Billy';
+info.nCaptures = 50;          % Number of captures to average over
 info.glucosenseDevice = 2;    % Glucosense device used (1, 2, 3)
 
 % -- Picoscope Settings -- %
 %channel A range and offset - may need to change depending on signal level
-range = 50;                   % Range in mV (50 or 100)
-analogueOffset = -0.230;      % Analogue offset in mV
+range = 20;                   % Range in mV (50 or 100)
+analogueOffset = -0.210;      % Analogue offset in mV
 
 % -- Saving CSV -- %
 storeCSV = true;             % Store data as a CSV (true / false)
+storeIndividual = true;     % Store individual run data (true / false)
 
 %% End of user parameters 
 
 % Use if serial device is not properly closed
 % delete(instrfindall)
 
-% TODO: why is it limited to <100ms?
-%data truncation values before curve fitting
-t_curvefit_start = 1e-3;
+%data truncation values before curve fitting. Not measurement time!
+t_curvefit_start = 10e-3;
 t_curvefit_stop = 98e-3;
 
 %% Set path to dlls and functions
@@ -53,7 +53,7 @@ data.oversample = 1;
 data.scaleVoltages = data.TRUE;
 data.inputRangesmV = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
-plotData = data.FALSE;    % Set to true to plot data
+plotData = data.FALSE;
 
 %% Device Connection
 
@@ -79,18 +79,19 @@ channelSettings(1).enabled = data.TRUE;
 channelSettings(1).DCCoupled = data.TRUE;
 
 %channel A range and offset - may need to change depending on signal level
-%channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
-%channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-
 switch range
+    case 20
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_20MV;
     case 50
         channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
     case 100
         channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_100MV;
+    case 0
+        % Manually input here
+        channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_2V;
 end
 
 channelSettings(1).analogueOffset = analogueOffset;
-
 
 % Channel B (trigger)
 channelB = enuminfo.enPS3000AChannel.PS3000A_CHANNEL_B;
@@ -141,7 +142,6 @@ nCaptures = info.nCaptures;
 num_captures_status = invoke(ps3000a_obj, 'ps3000aSetNoOfCaptures', nCaptures);
 
 %% Run Block
-
 preTriggerSamples = 0;
 postTriggerSamples = data.BUFFER_SIZE - preTriggerSamples;
 segmentIndex = 0;
@@ -275,15 +275,14 @@ buffer_a_mv_mean = mean(buffer_a_mv,2);
 
 %% Plot data
 
+% Time axis
+t_ns = double(timeIntNs1) * double([0:numSamples - 1]); % Time in ns
+t = t_ns / 1000000;  % convert to ms from ns
+t = t';
 if (plotData == data.TRUE)
 
     figure;
-
-    % Time axis
-    t_ns = double(timeIntNs1) * double([0:numSamples - 1]);
-    t = t_ns / 1000000;
-    t = t';
-
+    
     plot(t, buffer_a_mv_mean);
     %plot(t,buffer_a_mv(:,1))  % Plot a single decay
     xlabel('Time (ms)');
@@ -323,14 +322,20 @@ if storeCSV == true
     % Header
     fprintf(fid, 'Time, Mean, ');
     
-    for i = 1:nCaptures
-        fprintf(fid, '%d,', i);
+    if storeIndividual == false
+        CSVdata = [t, buffer_a_mv_mean, buffer_a_mv];
+    
+    else
+        for i = 1:nCaptures
+            fprintf(fid, ' Run %d,', i);
+        end
+        CSVdata = [t, buffer_a_mv_mean];
     end
-    fprintf(fid, '\n');
         
+    fprintf(fid, '\n');
     fclose(fid)
-    % Data
-    CSVdata = [timedata, buffer_a_mv_mean, buffer_a_mv];
+    
+    % Write Data
     dlmwrite(fname, CSVdata, '-append'); % Append header
     
 end

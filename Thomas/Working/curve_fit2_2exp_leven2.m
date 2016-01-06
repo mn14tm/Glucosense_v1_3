@@ -1,4 +1,4 @@
-function [decay_ms, decay_ms2 standd] = curve_fit2_2exp_leven2(xdata,ydata)
+function [p] = curve_fit2_2exp_leven2(xdata,ydata)
 
 % xdata is the time variable: timedata
 % ydata is the response: buffer_a_mv_mean

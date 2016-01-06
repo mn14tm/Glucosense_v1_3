@@ -1,4 +1,5 @@
-function [decay_ms, standd] = curve_fit2(xdata,ydata)
+function [decay_ms, decay_ms2 standd] = curve_fit2_2exp(xdata,ydata)
+
 % xdata is the time variable: timedata
 % ydata is the response: buffer_a_mv_mean
 
@@ -9,16 +10,18 @@ end
 clf;
 subplot(2,1,1); plot(xdata,ydata,'b')
 
-expfun = @(p,xdata) p(1) + p(2) .* exp(-xdata./p(3)); % Objective Funciton
+expfun = @(p,xdata) p(1).*exp(-xdata./p(2)) + p(3).*exp(-xdata./p(4)); % Objective Funciton
 
 SSECF  = @(p) sum((ydata - expfun(p,xdata)).^2); % Sum-Squared-Error Cost Function
 
 %initial guess for parameters
-p1_guess = min(ydata);
-p2_guess = max(ydata)-min(ydata);
-p3_guess = 0.01;
+p1_guess = max(ydata)-min(ydata);
+p2_guess = 0.01;
+p3_guess =  max(ydata)-min(ydata);
+p4_guess = 0.01;
+p5_guess = min(ydata);
 
-pguess = [p1_guess; p2_guess; p3_guess];
+pguess = [p1_guess; p2_guess; p3_guess; p4_guess];
 
 options = optimset( 'Display','notify', ...
                     'MaxFunEvals',1000, ...
@@ -30,8 +33,9 @@ options = optimset( 'Display','notify', ...
                     'PlotFcns',[] );
 
 [p,fminres,exitflag,output] = fminsearch(SSECF ,pguess,options);
+p
 
-yfitted = p(1) + (p(2)*exp(-xdata/p(3)));
+yfitted = expfun(p,xdata);
 
 hold on
 plot(xdata,yfitted,'r')
@@ -49,9 +53,11 @@ subplot(2,1,2); plot(xdata,res); %axis([0 0.05 -0.2 0.2]);
 %chi-squared value - Todo: need to finish
 %sum(((abs(ydata-yfitted)).^2)./yfitted)/(length(xdata)-3)
 
-decay_ms = p(3)*1000;
+decay_ms = p(2)*1000;
+decay_ms2 = p(4)*1000;
 
-fprintf('Decay ms = %.3f\n',decay_ms);
+fprintf('Decay ms 1 = %.3f\n',decay_ms);
+fprintf('Decay ms 2 = %.3f\n',decay_ms2);
 
 end
 

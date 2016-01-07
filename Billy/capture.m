@@ -7,16 +7,16 @@ clear;
 %% ********** Parameters to change **********
 
 info.sample = 'T18';          % Photonic Chip 
-info.laserPulseWidth = '100ms'; % Laser pulse width
-info.laserCurrent = '40mA';  % Laser driver current
+info.laserPulseWidth = '0.5ms'; % Laser pulse width
+info.laserCurrent = '300mA';  % Laser driver current
 info.user = 'Billy';
-info.nCaptures = 50;          % Number of captures to average over
-info.glucosenseDevice = 2;    % Glucosense device used (1, 2, 3)
+info.nCaptures = 10;          % Number of captures to average over
+info.glucosenseDevice = 3;    % Glucosense device used (1, 2, 3)
 
 % -- Picoscope Settings -- %
 %channel A range and offset - may need to change depending on signal level
-range = 20;                   % Range in mV (50 or 100)
-analogueOffset = -0.210;      % Analogue offset in mV
+range = 50;                   % Range in mV (50 or 100)
+analogueOffset = -0.220;      % Analogue offset in mV
 
 % -- Saving CSV -- %
 storeCSV = true;             % Store data as a CSV (true / false)

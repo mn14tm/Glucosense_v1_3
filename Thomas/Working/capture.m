@@ -6,23 +6,23 @@ clc; clear;
 %% ********** Parameters to change **********
 info.user = 'Thomas';
 info.sample = 'T13';             % Photonic Chip 
-info.nCaptures = 100;           % Number of captures to average over
+info.nCaptures = 10;           % Number of captures to average over
 info.glucosenseDevice = 1;      % Glucosense device used (1, 2, 3)
 info.temp = 23;                 % Room Temp (degC)
 
 % -- Picoscope Settings -- %
 %channel A range and offset - change depending on signal level
-info.range = 20;               % Range in mV
+info.range = 200;               % Range in mV
 info.analogueOffset = -0.215;      % DC Analogue offset in V
 
 % -- Laser Driver Params -- %
 info.laserCurrent = 60;        % Laser driver current (mA)
-info.laserPulsePeriod = 250;    % Laser pulse period (ms)
-info.laserPulseWidth = 100;     % Laser pulse width (ms)
+info.laserPulsePeriod = 100;    % Laser pulse period (ms)
+info.laserPulseWidth = 0.5;     % Laser pulse width (ms)
 
 % Curve Fitting Details
-t_curvefit_start = 1;           % Start reject time (ms)
-t_curvefit_stop = 1;            % End reject time (ms)
+t_curvefit_start = 2;           % Start reject time (ms)
+t_curvefit_stop = 2;            % End reject time (ms)
 
 % ---- End of user parameters ---- % 
 

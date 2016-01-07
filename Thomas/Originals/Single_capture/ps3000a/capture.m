@@ -34,7 +34,7 @@ info.laserPulseWidth = '500us';
 info.laserCurrent = '300mA';
 
 %number of captures to average over
-nCaptures = 10;
+nCaptures = 100;
 info.nCaptures = int2str(nCaptures);
 
 %data truncation values before curve fitting
@@ -94,8 +94,8 @@ channelSettings(1).DCCoupled = data.TRUE;
 %channelSettings(1).analogueOffset = -0.25;
 %channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
 %channelSettings(1).analogueOffset = -0.24;
-channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_50MV;
-channelSettings(1).analogueOffset = -0.220;
+channelSettings(1).range = enuminfo.enPS3000ARange.PS3000A_500MV;
+channelSettings(1).analogueOffset = -0.500;
 
 
 % Channel B (trigger)

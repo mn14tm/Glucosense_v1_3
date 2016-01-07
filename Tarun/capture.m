@@ -4,34 +4,36 @@ function [decay_ms, standd] = capture()
 clc; clear;
 
 %% ********** Parameters to change **********
-info.user = 'Edu';
-info.sample = 'T10';             % Photonic Chip 
-info.nCaptures = 100;           % Number of captures to average over
-info.glucosenseDevice = 3;      % Glucosense device used (1, 2, 3)
-info.temp = 'RT';                 % Room Temp (degC).
+info.user = 'B&T';
+info.sample = 'T17';            % Photonic Chip 
+info.glucosenseDevice = 1;      % Glucosense device used (1, 2, 3)
+info.temp = 23;                 % Room Temp (degC).
+
+% -- Laser Driver Params -- %
+info.laserCurrent =300;        % Laser driver current (mA)
+info.laserPulsePeriod = 100;    % Laser pulse period (ms)
+info.laserPulseWidth = 0.5;     % Laser pulse width (ms)
+
+% -- Working with glucose parameters -- %
+info.concentration = '0';    % Glucose concentration in mg/dl
+info.medium = 'Air';           % Blood/Intralipid/Finger/BloodNoSlip etc.
+% info.medium = 'Blank';
+info.FlowcellSample = 0;        %Flow cell number with blood
+info.runNumber = '62';            % Run number for chip and concentration
 
 % -- Picoscope Settings -- %
+info.nCaptures = 10;           % Number of captures to average over
 %channel A range and offset - change depending on signal level
-info.range = 20;               % Range in mV
-info.analogueOffset = -0.21;      % DC Analogu
-% -- Working with glucose parameters -- %e offset in V
-
-info.concentration = '341.5';    % Glucose concentration in mg/dl
-info.medium = 'BloodNoSlip33'; % Blood/Intralipid/Finger/BloodNoSlip etc.
-info.runNumber = '3';         % Run number for chip and concentration
+info.range = 200 ;               % Range in mV
+info.analogueOffset = -0.21;      % DC Analogue offset in V
 
 % -- Saving CSV -- %
 storeCSV = true;             % Store data as a CSV (true / false)
 headerCSV = true;            % Include header info to CSV (true / false)
 
-% -- Laser Driver Params -- %
-info.laserCurrent = 300;        % Laser driver current (mA)
-info.laserPulsePeriod = 100;    % Laser pulse period (ms)
-info.laserPulseWidth = 0.5;     % Laser pulse width (ms)
-
 % Curve Fitting Details
 t_curvefit_start = 1;           % Start reject time (ms)
-t_curvefit_stop = 2;            % End reject time (ms)
+t_curvefit_stop =3;            % End reject time (ms)
 
 % ---- End of user parameters ---- % 
 
@@ -335,10 +337,11 @@ result.standd = standd;
 timestamp = datestr(now(),'yyyymmddHHMMSS');
 info.timestamp = timestamp;
 
-fname = {info.sample, [info.concentration, 'mgdl'], ['r', info.runNumber]};
+fname = {info.sample, [info.concentration, 'mgdl'], ['r', info.runNumber]...
+    , info.medium};
 fname = strjoin(fname, '_');
 
-filename = [fname '.MAT'];
+filename = [timestamp '.MAT'];
 f = fullfile('Data\',filename);
 save(f, 'info', 'buffer_a_mv', 'buffer_a_mv_mean', 'timeIntNs1',...
     'result', 'timestamp', 't');

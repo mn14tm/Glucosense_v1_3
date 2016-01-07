@@ -14,7 +14,7 @@ expfun = @(p,xdata) p(1)*exp(-xdata/p(2)) + p(3)*exp(-xdata/p(4)) + p(5); % Obje
 
 %initial guess for parameters
 p1_guess = max(ydata)-min(ydata);
-p2_guess = 10;
+p2_guess = 5;
 p3_guess =  max(ydata)-min(ydata);
 p4_guess = 10;
 p5_guess = min(ydata);

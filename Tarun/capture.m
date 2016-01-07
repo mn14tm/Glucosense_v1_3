@@ -328,9 +328,11 @@ xdata = 0:t_samp:((length(ydata)-1)*t_samp);
 xdata = xdata';
 
 [decay_ms, standd] = curve_fit2(xdata,ydata);
+[p] = curve_fit2_2exp_leven2(xdata,ydata);
 
 result.decay_ms = decay_ms;
 result.standd = standd;
+result.doubleExp = p;
 
 %% Save data in .MAT file
 

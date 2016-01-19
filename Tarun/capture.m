@@ -4,27 +4,27 @@ function [decay_ms, standd] = capture()
 clc; clear;
 
 %% ********** Parameters to change **********
-info.user = 'B&T';
-info.sample = 'T17';            % Photonic Chip 
-info.glucosenseDevice = 1;      % Glucosense device used (1, 2, 3)
+info.user = 'B&T&T';
+info.sample = 'H41-1';            % Photonic Chip 
+info.glucosenseDevice = 2;      % Glucosense device used (1, 2, 3)
 info.temp = 23;                 % Room Temp (degC).
 
 % -- Laser Driver Params -- %
 info.laserCurrent =300;        % Laser driver current (mA)
 info.laserPulsePeriod = 100;    % Laser pulse period (ms)
-info.laserPulseWidth = 0.5;     % Laser pulse width (ms)
+info.laserPulseWidth = 3;     % Laser pulse width (ms)
 
 % -- Working with glucose parameters -- %
 info.concentration = '0';    % Glucose concentration in mg/dl
-info.medium = 'Air';           % Blood/Intralipid/Finger/BloodNoSlip etc.
-% info.medium = 'Blank';
+info.medium = 'blood';           % Blood/Intralipid/Finger/BloodNoSlip etc.
+%info.medium = 'air';
 info.FlowcellSample = 0;        %Flow cell number with blood
-info.runNumber = '62';            % Run number for chip and concentration
+info.runNumber = '1';            % Run number for chip and concentration
 
 % -- Picoscope Settings -- %
 info.nCaptures = 10;           % Number of captures to average over
 %channel A range and offset - change depending on signal level
-info.range = 200 ;               % Range in mV
+info.range = 20 ;               % Range in mV
 info.analogueOffset = -0.21;      % DC Analogue offset in V
 
 % -- Saving CSV -- %
